@@ -4,6 +4,7 @@ const morgan = require('morgan');
 const AppError = require('./utils/appError');
 const doctorRouter = require('./routes/doctorRouter');
 const userRouter = require('./routes/userRouter');
+const patientRouter = require('./routes/patientRouter');
 const globalErrorHandler = require('./controllers/errorController');
 
 const app = express();
@@ -16,15 +17,11 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 app.use('/api/v1/doctors', doctorRouter);
+app.use('/api/v1/patients', patientRouter);
 app.use('/api/v1/users', userRouter);
 
 // Handling unhandled routes
 app.all('*', (req, res, next) => {
-  // const err = new Error(`Can't find ${req.originalUrl} on this server`);
-  // err.status = 'fail';
-  // err.statusCode = 400;
-
-  // next(err);
   next(new AppError(`Can't find ${req.originalUrl} on the server`, 404));
 });
 

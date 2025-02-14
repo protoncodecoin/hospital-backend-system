@@ -4,12 +4,20 @@ const authController = require('../controllers/authController');
 
 const router = express.Router();
 
+router.post(
+  '/notes',
+  authController.protect,
+  authController.restrictTo('doctor'),
+  doctorController.submitNote,
+);
+
+router.route('/').get(authController.protect, doctorController.getAllDoctors);
 router
-  .route('/patients/')
+  .route('/my-patients/')
   .get(
     authController.protect,
     authController.restrictTo('doctor'),
-    doctorController.getAllPatients,
+    doctorController.getAssignedPatients,
   );
 
 router
@@ -17,6 +25,6 @@ router
   .get(
     authController.protect,
     authController.restrictTo('doctor'),
-    doctorController.getPatient,
+    doctorController.getPatientNote,
   );
 module.exports = router;

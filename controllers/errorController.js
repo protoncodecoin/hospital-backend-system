@@ -74,18 +74,20 @@ module.exports = (err, req, res, next) => {
   if (process.env.NODE_ENV === 'development') {
     sendErrorDev(err, res);
   } else if (process.env.NODE_ENV === 'production') {
-    // const error = { ...err };
-    let error = { ...err };
-
-    if (err.name === 'CastError') error = handleCastErrorDb(err);
-
-    if (err.code === 11000) error = handleDuplicateFieldsDB(err);
-
-    if (err.name === 'ValidationError') error = handleValidationErrorDB(err);
-
-    if (err.name === 'JsonWebTokenError') error = handleJWTError();
-    if (err.name === 'TokenExpiredError') error = handleJWTExpiredError();
-
-    sendErrorProd(error, res);
+    if (err.name === 'CastError') {
+      return sendErrorProd(handleCastErrorDb(err), res);
+    } else if (err.code === 11000) {
+      return sendErrorProd(handleDuplicateFieldsDB(err), res);
+    } else if (err.name === 'ValidationError') {
+      return sendErrorProd(handleValidationErrorDB(err), res);
+    } else if (err.name === 'JsonWebTokenError') {
+      return sendErrorProd(handleJWTError(), res);
+    } else if (err.name === 'TokenExpiredError') {
+      return sendErrorProd(handleJWTExpiredError(), res);
+    } else if (err.message.toLowerCase().includes('specialization')) {
+      sendErrorProd(err, res);
+    } else {
+      sendErrorProd(err, res);
+    }
   }
 };

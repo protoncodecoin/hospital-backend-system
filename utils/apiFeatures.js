@@ -13,7 +13,12 @@ class APIFeatures {
     let queryStr = JSON.stringify(queryObj);
     queryStr = queryStr.replace(/\b(gte|gt|lte|lt)\b/g, (match) => `$${match}`);
 
-    this.query.find(JSON.parse(queryStr));
+    // Check if userRole filtering is present
+    if (queryObj.userRole) {
+      this.query = this.query.find({ userRole: queryObj.userRole });
+    } else {
+      this.query.find(JSON.parse(queryStr));
+    }
 
     return this;
   }
@@ -42,8 +47,12 @@ class APIFeatures {
   limitFields() {
     if (this.queryString.fields) {
       const fields = this.queryString.fields.split(',').join(' ');
-      console.log(fields);
+
       this.query = this.query.select(fields);
+
+      // Exempt specialization field
+    } else if (this.queryString?.userRole == 'patient') {
+      this.query = this.query.select('-specialization').select('-__v');
     } else {
       this.query = this.query.select('-__v');
     }

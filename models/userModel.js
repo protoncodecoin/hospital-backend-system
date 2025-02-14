@@ -1,6 +1,10 @@
 const mongoose = require('mongoose');
 const validator = require('validator');
 const bcrypt = require('bcryptjs');
+const AppError = require('../utils/appError');
+const Doctor = require('./doctorModel');
+const Patient = require('./patientModel');
+const asyncHookError = require('./../utils/catchAsyncHook');
 
 // Scheman for Patient
 const userSchema = new mongoose.Schema({
@@ -50,6 +54,14 @@ const userSchema = new mongoose.Schema({
         'Role is either: patient or doctor. Automatically defaults to patient',
     },
   },
+  specialization: {
+    type: String,
+    required: false,
+    enum: {
+      values: ['Cardiology', 'Neurology', 'Dermatology', 'General Medicine'],
+      message: 'Specialization is required',
+    },
+  },
 });
 
 userSchema.pre('save', async function (next) {
@@ -73,7 +85,74 @@ userSchema.methods.comparePasswords = async function (
   return await bcrypt.compare(candidatePassword, userPassword);
 };
 
-// check
+// Enforce user to input a specialization value if role is doctor
+userSchema.pre('save', async function (next) {
+  if (this.userRole === 'doctor' && !this.specialization) {
+    return next(
+      new AppError('specialization is only required for doctors', 400),
+    );
+  }
+
+  if (this.userRole === 'patient' && this.specialization) {
+    return next(
+      new AppError('Specialization is only required for doctors', 400),
+    );
+  }
+
+  next();
+});
+
+// Automatically create a Doctor or Patient record base on userRole
+// userSchema.post('save', async function (doc, next) {
+//   try {
+//     if (doc.userRole === 'doctor') {
+//       await Doctor.create({
+//         relatedUser: doc._id,
+//         specialization: doc.specialization,
+//       });
+//     } else if (doc.userRole == 'patient') {
+//       await Patient.create({ relatedUser: doc._id });
+//       //
+//     }
+//   } catch (error) {
+//     //
+//   }
+
+//   next();
+// });
+
+// Automatically create a Doctor or Patient record base on userRole
+userSchema.post(
+  'save',
+  asyncHookError(async function (doc, next) {
+    if (doc.userRole === 'doctor') {
+      await Doctor.create({
+        relDoctor: doc._id,
+        specialization: doc.specialization,
+      });
+    } else if (doc.userRole == 'patient') {
+      await Patient.create({ relPatient: doc._id });
+      //
+    }
+
+    next();
+  }),
+);
+
+// Remove other records when the user is removed
+userSchema.pre(
+  'remove',
+  asyncHookError(async function (next) {
+    if (this.userRole === 'doctor') {
+      await Doctor.deleteOne({ relDoctor: this._id });
+    } else if (this.userRole === 'patient') {
+      await Patient.deleteOne({ relPatient: this._id });
+    }
+    next();
+  }),
+);
+
+// check if user has changed password after token was issued
 userSchema.methods.changesPasswordAfter = function (JWTTimestamp) {
   if (this.passwordChangedAt) {
     const changedTimestamp = parseInt(

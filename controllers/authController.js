@@ -18,6 +18,8 @@ exports.signup = catchAsync(async (req, res, next) => {
     email: req.body.email,
     password: req.body.password,
     passwordConfirm: req.body.passwordConfirm,
+    userRole: req.body.userRole,
+    specialization: req.body.specialization || null,
   });
 
   // Create jwt and send it to user
@@ -54,8 +56,6 @@ exports.login = catchAsync(async (req, res, next) => {
   });
 });
 
-
-
 exports.protect = catchAsync(async (req, res, next) => {
   // 1) Get token and check if it exist
   let token;
@@ -78,7 +78,7 @@ exports.protect = catchAsync(async (req, res, next) => {
 
   // 3) Check if user still exists
 
-  const currentUser =  await User.findById(decoded.id).select("-__v");
+  const currentUser = await User.findById(decoded.id).select('-__v');
 
   if (!currentUser) {
     return next(
@@ -102,10 +102,25 @@ exports.restrictTo =
   (...roles) =>
   (req, res, next) => {
     if (!roles.includes(req.user.userRole)) {
-
       return next(
         new AppError('You are not authorized to access this resource'),
       );
     }
     next();
   };
+
+// Prevent broken access control from patient to patent)
+exports.restrictSpecificResource = (req, res, next) => {
+  if (req.user.userRole === 'patient') {
+    if (
+      req.query.hasOwnProperty('userRole') &&
+      req.query.userRole == 'patient'
+    ) {
+      return next(
+        new AppError('You are not authorized to access this resources'),
+      );
+    }
+  }
+
+  next();
+};
