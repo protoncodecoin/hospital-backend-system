@@ -71,8 +71,6 @@ exports.submitNote = catchAsync(async (req, res, next) => {
 exports.getPatientNote = catchAsync(async (req, res, next) => {
   const userID = req.user.id;
 
-  console.log(userID);
-
   const doctor = await Doctor.findOne({ relDoctor: userID });
 
   const notes = await DoctorNote.find({ doctor: doctor.id })
