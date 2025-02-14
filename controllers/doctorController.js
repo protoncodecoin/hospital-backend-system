@@ -1,6 +1,6 @@
 const APIFeatures = require('../utils/apiFeatures');
-const catchAsync = require('./../utils/catchAsyncError');
-const User = require('./../models/userModel');
+const catchAsync = require('../utils/catchAsyncError');
+const User = require('../models/userModel');
 const AppError = require('../utils/appError');
 
 exports.getAllPatients = catchAsync(async (req, res, next) => {
