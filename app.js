@@ -12,7 +12,6 @@ app.use(express.json());
 app.use(morgan('dev'));
 
 if (process.env.NODE_ENV === 'development') {
-  console.log(process.env.NODE_ENV, "============");
   app.use(morgan('dev'));
 }
 
@@ -21,6 +20,11 @@ app.use('/api/v1/users', userRouter);
 
 // Handling unhandled routes
 app.all('*', (req, res, next) => {
+  // const err = new Error(`Can't find ${req.originalUrl} on this server`);
+  // err.status = 'fail';
+  // err.statusCode = 400;
+
+  // next(err);
   next(new AppError(`Can't find ${req.originalUrl} on the server`, 404));
 });
 
