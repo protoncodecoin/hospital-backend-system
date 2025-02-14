@@ -5,14 +5,12 @@ const authController = require('../controllers/authController');
 const router = express.Router();
 
 router
-  .route('/')
+  .route('/patients/')
   .get(
     authController.protect,
     authController.restrictTo('doctor'),
     doctorController.getAllPatients,
   );
-
-// router.route('/:id').get(doctorController.getAssignedPatients);
 
 router
   .route('/patients/:id')

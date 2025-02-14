@@ -54,6 +54,8 @@ exports.login = catchAsync(async (req, res, next) => {
   });
 });
 
+
+
 exports.protect = catchAsync(async (req, res, next) => {
   // 1) Get token and check if it exist
   let token;
@@ -76,7 +78,7 @@ exports.protect = catchAsync(async (req, res, next) => {
 
   // 3) Check if user still exists
 
-  const currentUser = await User.findById(decoded.id);
+  const currentUser =  await User.findById(decoded.id).select("-__v");
 
   if (!currentUser) {
     return next(
