@@ -57,6 +57,7 @@ exports.submitNote = catchAsync(async (req, res, next) => {
 
   // Find the doctor record associated with the logged-in user
   const doctor = await Doctor.findOne({ relDoctor: req.user.id });
+  const patient = await Patient.findOne({relPatient: patientID}).populate('assignedDoctor')
 
   if (!doctor || !note) {
     return next(new AppError('Doctor profile not found', 404));
@@ -75,7 +76,7 @@ exports.submitNote = catchAsync(async (req, res, next) => {
   // save the note and actionable steps
     const newNote = new DoctorNote({
     doctor: doctor._id,
-    patient: patientID,
+    patient: patient._id,
     note: note,
     actionableSteps: {
       checklist: llmResponse.checklist,

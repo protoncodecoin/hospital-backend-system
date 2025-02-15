@@ -26,7 +26,6 @@ const generateContent = async (note) => {
         // Parse JSON
         const jsonOutput = JSON.parse(text);
         
-        console.log(jsonOutput); 
         return jsonOutput; // Return JSON
     } catch (err) {
         console.error("LLM Error:", err);

@@ -4,6 +4,7 @@ const User = require('../models/userModel');
 const AppError = require('../utils/appError');
 const Patient = require('../models/patientModel');
 const DoctorNote = require('../models/doctorNotes');
+const mongoose = require("mongoose");
 
 exports.getAllPatients = catchAsync(async (req, res, next) => {
   const features = new APIFeatures(User.find(), req.query)
@@ -48,11 +49,11 @@ exports.selectDoctor = catchAsync(async (req, res, next) => {
   });
 });
 
+
 exports.getNotes = catchAsync(async (req, res, next) => {
   const id = req.user.id;
-  console.log(id, 'this is the id ==========')
+  console.log("Logged-in user ID:", id);
 
-  // Get the patient recrod associated with the logged-in user
   const patient = await Patient.findOne({ relPatient: id });
 
   if (!patient) {
@@ -60,9 +61,11 @@ exports.getNotes = catchAsync(async (req, res, next) => {
   }
 
   const notes = await DoctorNote.find({ patient: patient._id })
-    .select('doctor patient note')
+    .select('doctor patient actionableSteps')
     .populate({ path: 'doctor', select: '_id' })
     .sort({ createdAt: -1 });
+
+  console.log("Found Notes:", notes);
 
   res.status(200).json({
     status: 'success',
@@ -70,6 +73,7 @@ exports.getNotes = catchAsync(async (req, res, next) => {
     data: { notes },
   });
 });
+
 
 exports.getPatientNotesById = catchAsync(async (req, res, next) => {
   const { id } = req.params;
