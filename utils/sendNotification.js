@@ -1,8 +1,7 @@
 const mongoose = require('mongoose');
 const Reminder = require('../models/ReminderModel');
 
-const MONGO_URI =
-  process.env.DATABASE_LOCAL || 'mongodb://localhost:27017/hospital_db';
+const MONGO_URI = process.env.DATABASE_LOCAL;
 
 // Establish MongoDB Connection
 mongoose
