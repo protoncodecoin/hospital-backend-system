@@ -10,9 +10,14 @@ router.post(
   authController.restrictTo('patient'),
   patientController.selectDoctor,
 );
+router.post(
+  '/check-in',
+  authController.protect,
+  authController.restrictTo('patient'),
+  patientController.checkIn,
+);
 
 router.route('/').get(authController.protect, patientController.getAllPatients);
-
 router
   .route('/notes')
   .get(
@@ -20,9 +25,5 @@ router
     authController.restrictTo('patient'),
     patientController.getNotes,
   );
-
-router
-  .route('/notes/:id')
-  .get(authController.protect, patientController.getPatientNotesById);
 
 module.exports = router;

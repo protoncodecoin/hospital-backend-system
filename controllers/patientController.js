@@ -4,7 +4,7 @@ const User = require('../models/userModel');
 const AppError = require('../utils/appError');
 const Patient = require('../models/patientModel');
 const DoctorNote = require('../models/doctorNotes');
-const mongoose = require("mongoose");
+const Reminder = require('../models/ReminderModel');
 
 exports.getAllPatients = catchAsync(async (req, res, next) => {
   const features = new APIFeatures(User.find(), req.query)
@@ -49,10 +49,9 @@ exports.selectDoctor = catchAsync(async (req, res, next) => {
   });
 });
 
-
 exports.getNotes = catchAsync(async (req, res, next) => {
   const id = req.user.id;
-  console.log("Logged-in user ID:", id);
+  console.log('Logged-in user ID:', id);
 
   const patient = await Patient.findOne({ relPatient: id });
 
@@ -65,7 +64,7 @@ exports.getNotes = catchAsync(async (req, res, next) => {
     .populate({ path: 'doctor', select: '_id' })
     .sort({ createdAt: -1 });
 
-  console.log("Found Notes:", notes);
+  console.log('Found Notes:', notes);
 
   res.status(200).json({
     status: 'success',
@@ -74,18 +73,19 @@ exports.getNotes = catchAsync(async (req, res, next) => {
   });
 });
 
+exports.checkIn = catchAsync(async (req, res, next) => {
+  const { patientId, taskID } = req.body;
 
-exports.getPatientNotesById = catchAsync(async (req, res, next) => {
-  const { id } = req.params;
+  const patient = await Patient.findOne({ relPatient: patientId });
 
-  const notes = await DoctorNote.find({ patient: id })
-    .select('doctor patient note')
-    .populate({ path: 'doctor', select: '_id' })
-    .sort({ createdAt: -1 });
-
-  res.status(200).json({
-    status: 'success',
-    results: notes.length,
-    data: { notes },
+  const reminder = await Reminder.findOne({
+    _id: taskID,
+    patient: patient._id,
   });
+  if (!reminder) return next(new AppError('Reminder not found', 404));
+
+  reminder.status = 'completed';
+  await reminder.save();
+
+  res.json({ status: 'success', message: 'Reminder marked as completed' });
 });

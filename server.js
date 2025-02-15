@@ -5,12 +5,12 @@ const mongoose = require('mongoose');
 process.on('uncaughtException', (err) => {
   console.log('FROM uncaught exception: ', err);
   process.exit(1);
-  // TODO: Log error to log file
 });
 
 dotenv.config({ path: './config.env' });
 
-const DB = process.env.DATABASE_LOCAL;
+const DB = process.env.DATABASE_LOCAL || process.env.DOCKER_MONGO_URI;
+console.log(DB);
 
 const app = require('./app');
 
@@ -26,5 +26,4 @@ const server = app.listen(port, () => {
 process.on('unhandledRejection', (err) => {
   console.log('FROM unhandledRejection: ', err);
   server.close(() => process.exit(1));
-  // TODO: Log error to log file
 });

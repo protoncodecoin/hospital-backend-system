@@ -5,15 +5,14 @@ const AppError = require('../utils/appError');
 const Patient = require('../models/patientModel');
 const DoctorNote = require('../models/doctorNotes');
 const Doctor = require('../models/doctorModel');
+const Reminder = require('../models/ReminderModel');
 const callLLM = require('../utils/llmService');
+const generateReminders = require('../utils/generateReminder');
 
 const extractDuration = (text) => {
   const match = text.match(/\d+\s+(day|week|month)/);
-  return match ? match[0] : "7 days"; // Default to 7 days if nothing is found
+  return match ? match[0] : '7 days'; // Default to 7 days if nothing is found
 };
-
-
-
 
 exports.getAllDoctors = catchAsync(async (req, res, next) => {
   const features = new APIFeatures(User.find(), req.query)
@@ -53,39 +52,45 @@ exports.getAssignedPatients = catchAsync(async (req, res, next) => {
 });
 
 exports.submitNote = catchAsync(async (req, res, next) => {
-  const { patientID, note } = req.body;
+  const { userId, note } = req.body;
 
   // Find the doctor record associated with the logged-in user
   const doctor = await Doctor.findOne({ relDoctor: req.user.id });
-  const patient = await Patient.findOne({relPatient: patientID}).populate('assignedDoctor')
+  const patient = await Patient.findOne({ relPatient: userId });
 
-  if (!doctor || !note) {
-    return next(new AppError('Doctor profile not found', 404));
+  // console.log(patient._id);
+
+  if (!doctor || !note || !patient) {
+    return next(new AppError('Invalid request sent', 400));
   }
 
- 
   // generate actionable steps from AI
   const llmResponse = await callLLM(note);
 
   const transformedPlan = llmResponse.plan.map((task) => ({
     task: task,
-    repeat: task.includes("daily") ? "daily" : "once", // Smarter detection
-    duration: extractDuration(task) // Extract duration dynamically
+    repeat: task.includes('daily') ? 'daily' : 'once', // Smarter detection
+    duration: extractDuration(task), // Extract duration dynamically
   }));
 
+  // Delete all old reminders related to the patient before saving new notes
+  await Reminder.deleteMany({ patient: patient });
+
   // save the note and actionable steps
-    const newNote = new DoctorNote({
+  const newNote = new DoctorNote({
     doctor: doctor._id,
     patient: patient._id,
     note: note,
     actionableSteps: {
       checklist: llmResponse.checklist,
-      plan: transformedPlan
-    }
+      plan: transformedPlan,
+    },
   });
 
   await newNote.save();
 
+  // Generate reminders
+  await generateReminders(newNote);
 
   res.status(200).json({
     status: 'sucess',
