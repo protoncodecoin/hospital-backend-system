@@ -1,30 +1,37 @@
-const axios = require("axios");
+const dotenv = require("dotenv").config();
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 
-async function callLLM(note) {
-  const OPENAI_API_KEY = "your-api-key-here"; 
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-  try {
-    const response = await axios.post(
-      "https://api.openai.com/v1/chat/completions",
-      {
-        model: "gpt-4", 
-        messages: [{ role: "system", content: "Extract actionable medical steps from the note" },
-                   { role: "user", content: note }],
-        temperature: 0.7
-      },
-      {
-        headers: { Authorization: `Bearer ${OPENAI_API_KEY}` }
-      }
-    );
+const generateContent = async (note) => {
+    try {
+        const prompt = `Extract actionable medical steps from this doctor note and return ONLY JSON format:
+        {
+            "checklist": [...], 
+            "plan": [...]
+        }
+        Do not provide medical advice or override the note. 
+        Doctor Note: ${note}`;
 
-    const content = response.data.choices[0].message.content;
-    const parsedSteps = JSON.parse(content);
+        const result = await model.generateContent(prompt);
+        const response = await result.response; 
 
-    return parsedSteps;
-  } catch (error) {
-    console.error("LLM Error:", error);
-    throw new Error("Failed to process note with AI");
-  }
-}
+        // Extract raw text from the response
+        let text = response.candidates[0].content.parts[0].text;
 
-module.exports = callLLM;
+        // Remove potential Markdown formatting (like ```json ... ```)
+        text = text.replace(/```json/g, "").replace(/```/g, "").trim();
+
+        // Parse JSON
+        const jsonOutput = JSON.parse(text);
+        
+        console.log(jsonOutput); 
+        return jsonOutput; // Return JSON
+    } catch (err) {
+        console.error("LLM Error:", err);
+        throw new Error("Failed to process note with AI");
+    }
+};
+
+module.exports = generateContent;

@@ -50,8 +50,16 @@ exports.selectDoctor = catchAsync(async (req, res, next) => {
 
 exports.getNotes = catchAsync(async (req, res, next) => {
   const id = req.user.id;
+  console.log(id, 'this is the id ==========')
 
-  const notes = await DoctorNote.find({ patient: id })
+  // Get the patient recrod associated with the logged-in user
+  const patient = await Patient.findOne({ relPatient: id });
+
+  if (!patient) {
+    return next(new AppError('Patient profile not found', 404));
+  }
+
+  const notes = await DoctorNote.find({ patient: patient._id })
     .select('doctor patient note')
     .populate({ path: 'doctor', select: '_id' })
     .sort({ createdAt: -1 });

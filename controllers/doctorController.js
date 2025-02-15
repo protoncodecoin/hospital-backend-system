@@ -5,6 +5,15 @@ const AppError = require('../utils/appError');
 const Patient = require('../models/patientModel');
 const DoctorNote = require('../models/doctorNotes');
 const Doctor = require('../models/doctorModel');
+const callLLM = require('../utils/llmService');
+
+const extractDuration = (text) => {
+  const match = text.match(/\d+\s+(day|week|month)/);
+  return match ? match[0] : "7 days"; // Default to 7 days if nothing is found
+};
+
+
+
 
 exports.getAllDoctors = catchAsync(async (req, res, next) => {
   const features = new APIFeatures(User.find(), req.query)
@@ -46,21 +55,36 @@ exports.getAssignedPatients = catchAsync(async (req, res, next) => {
 exports.submitNote = catchAsync(async (req, res, next) => {
   const { patientID, note } = req.body;
 
-  // 1. Find the doctor record associated with the logged-in user
+  // Find the doctor record associated with the logged-in user
   const doctor = await Doctor.findOne({ relDoctor: req.user.id });
 
-  if (!doctor) {
+  if (!doctor || !note) {
     return next(new AppError('Doctor profile not found', 404));
   }
-  console.log(doctor);
-  console.log(patientID);
 
-  // create a new note
-  const newNote = await DoctorNote.create({
-    doctor: doctor._id, // Use the actual doctor ID, not the user ID
+ 
+  // generate actionable steps from AI
+  const llmResponse = await callLLM(note);
+
+  const transformedPlan = llmResponse.plan.map((task) => ({
+    task: task,
+    repeat: task.includes("daily") ? "daily" : "once", // Smarter detection
+    duration: extractDuration(task) // Extract duration dynamically
+  }));
+
+  // save the note and actionable steps
+    const newNote = new DoctorNote({
+    doctor: doctor._id,
     patient: patientID,
     note: note,
+    actionableSteps: {
+      checklist: llmResponse.checklist,
+      plan: transformedPlan
+    }
   });
+
+  await newNote.save();
+
 
   res.status(200).json({
     status: 'sucess',
