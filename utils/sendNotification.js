@@ -1,7 +1,8 @@
 const mongoose = require('mongoose');
 const Reminder = require('../models/ReminderModel');
 
-const MONGO_URI = process.env.DATABASE_LOCAL;
+const MONGO_URI =
+  process.env.DATABASE_LOCAL || 'mongodb://localhost:27017/hospital_system';
 
 // Establish MongoDB Connection
 mongoose
@@ -23,8 +24,6 @@ const sendNotification = async () => {
       dueDate: { $lte: now },
       status: 'pending',
     });
-
-    console.log('Found reminders: ', reminders);
 
     for (const reminder in reminders) {
       console.log(

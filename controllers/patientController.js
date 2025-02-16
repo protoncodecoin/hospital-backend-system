@@ -6,6 +6,9 @@ const Patient = require('../models/patientModel');
 const DoctorNote = require('../models/doctorNotes');
 const Reminder = require('../models/ReminderModel');
 
+/**
+ * Get all Patients from the Db
+ */
 exports.getAllPatients = catchAsync(async (req, res, next) => {
   const features = new APIFeatures(User.find(), req.query)
     .filter()
@@ -24,13 +27,16 @@ exports.getAllPatients = catchAsync(async (req, res, next) => {
   });
 });
 
+/**
+ * Allows patient to select a doctor by providing the user's id
+ */
 exports.selectDoctor = catchAsync(async (req, res, next) => {
-  const selectedDoctorId = req.params.id;
+  const selectedUserId = req.params.id;
   const patient = await Patient.findOne({ relPatient: req.user.id }).populate(
     'assignedDoctor',
   );
 
-  const doctor = await User.findById(selectedDoctorId);
+  const doctor = await User.findById(selectedUserId);
 
   if (!doctor || !patient) {
     return next(new AppError('No doctor found with the given ID', 404));
@@ -49,9 +55,11 @@ exports.selectDoctor = catchAsync(async (req, res, next) => {
   });
 });
 
+/**
+ * Get User Notes by providing the Id of the user
+ */
 exports.getNotes = catchAsync(async (req, res, next) => {
   const id = req.user.id;
-  console.log('Logged-in user ID:', id);
 
   const patient = await Patient.findOne({ relPatient: id });
 
@@ -73,13 +81,16 @@ exports.getNotes = catchAsync(async (req, res, next) => {
   });
 });
 
+/**
+ * Get the userID and taskId from the request object and retrieve active reminder and
+ */
 exports.checkIn = catchAsync(async (req, res, next) => {
-  const { patientId, taskID } = req.body;
+  const { userId, taskId } = req.body;
 
-  const patient = await Patient.findOne({ relPatient: patientId });
+  const patient = await Patient.findOne({ relPatient: userId });
 
   const reminder = await Reminder.findOne({
-    _id: taskID,
+    _id: taskId,
     patient: patient._id,
   });
   if (!reminder) return next(new AppError('Reminder not found', 404));

@@ -58,10 +58,20 @@ exports.submitNote = catchAsync(async (req, res, next) => {
   const doctor = await Doctor.findOne({ relDoctor: req.user.id });
   const patient = await Patient.findOne({ relPatient: userId });
 
-  // console.log(patient._id);
-
   if (!doctor || !note || !patient) {
     return next(new AppError('Invalid request sent', 400));
+  }
+
+  if (
+    !patient.assignedDoctor ||
+    !patient.assignedDoctor._id.equals(doctor.relDoctor)
+  ) {
+    return next(
+      new AppError(
+        'You are not authorized to create a note for this patient',
+        401,
+      ),
+    );
   }
 
   // generate actionable steps from AI
@@ -101,15 +111,22 @@ exports.submitNote = catchAsync(async (req, res, next) => {
 exports.getPatientNote = catchAsync(async (req, res, next) => {
   const userID = req.user.id;
 
-  const doctor = await Doctor.findOne({ relDoctor: userID });
+  const doctorObj = await Doctor.findOne({ relDoctor: userID });
 
-  const notes = await DoctorNote.find({ doctor: doctor.id })
+  const notes = await DoctorNote.find({ doctor: doctorObj.id })
     .select('-__v')
     .sort({ createdAt: -1 });
 
+  const decryptedNotes = notes.map((note) => ({
+    _id: note._id,
+    doctor: note.doctor,
+    note: note.getDecryptedNote(), // Decrypt before sending,
+    createdAt: note.createdAt,
+  }));
+
   res.status(200).json({
     status: 'success',
-    results: notes.length,
-    data: { notes },
+    results: decryptedNotes.length,
+    data: { decryptedNotes },
   });
 });

@@ -14,7 +14,7 @@ const doctorSchema = new mongoose.Schema({
       'General Medicine',
     ],
   },
-  patients: [{ type: mongoose.Types.ObjectId, ref: 'Patient' }],
+  // patients: [{ type: mongoose.Types.ObjectId, ref: 'Patient' }],
 });
 
 const Doctor = mongoose.model('Doctor', doctorSchema);

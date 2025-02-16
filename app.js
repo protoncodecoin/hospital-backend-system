@@ -4,6 +4,7 @@ const morgan = require('morgan');
 const AppError = require('./utils/appError');
 const doctorRouter = require('./routes/doctorRouter');
 const userRouter = require('./routes/userRouter');
+const reminderRouter = require('./routes/reminderRouter');
 const patientRouter = require('./routes/patientRouter');
 const globalErrorHandler = require('./controllers/errorController');
 
@@ -19,6 +20,7 @@ if (process.env.NODE_ENV === 'development') {
 app.use('/api/v1/doctors', doctorRouter);
 app.use('/api/v1/patients', patientRouter);
 app.use('/api/v1/users', userRouter);
+app.use('/api/v1/reminders', reminderRouter);
 
 // Handling unhandled routes
 app.all('*', (req, res, next) => {

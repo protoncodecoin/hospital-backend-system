@@ -1,4 +1,7 @@
 const mongoose = require('mongoose');
+const CryptoJS = require('crypto-js');
+
+const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY;
 
 const doctorNoteSchema = new mongoose.Schema(
   {
@@ -27,6 +30,21 @@ const doctorNoteSchema = new mongoose.Schema(
   },
   { timestamps: true },
 );
+
+doctorNoteSchema.pre('save', function (next) {
+  if (this.isModified('note')) {
+    // AES encryption algorithm to encrypt note on save
+    this.note = CryptoJS.AES.encrypt(this.note, ENCRYPTION_KEY).toString();
+  }
+
+  next();
+});
+
+// method to decrypt note before sending to the client
+doctorNoteSchema.methods.getDecryptedNote = function () {
+  const bytes = CryptoJS.AES.decrypt(this.note, ENCRYPTION_KEY);
+  return bytes.toString(CryptoJS.enc.Utf8);
+};
 
 const DoctorNote = mongoose.model('DoctorNote', doctorNoteSchema);
 module.exports = DoctorNote;

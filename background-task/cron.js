@@ -13,7 +13,6 @@ cron.schedule('* * * * *', async () => {
       status: 'pending',
       dueDate: { $lte: now },
     });
-    console.log('The results for pending reminders: ', reminders);
 
     for (const reminder of reminders) {
       await sendNotification(reminder.patient, reminder.task);

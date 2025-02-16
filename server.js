@@ -10,7 +10,6 @@ process.on('uncaughtException', (err) => {
 dotenv.config({ path: './config.env' });
 
 const DB = process.env.DATABASE_LOCAL || process.env.DOCKER_MONGO_URI;
-console.log(DB);
 
 const app = require('./app');
 

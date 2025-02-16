@@ -5,11 +5,13 @@ const User = require('../models/userModel');
 const catchAsync = require('../utils/catchAsyncError');
 const AppError = require('../utils/appError');
 
+// create and sign jwt token for user
 const signToken = (id) =>
   jwt.sign({ id }, process.env.JWT_TOKEN_SECRET, {
     expiresIn: process.env.JWT_EXPIRES_IN,
   });
 
+// handle user creation
 exports.signup = catchAsync(async (req, res, next) => {
   const newUser = await User.create({
     firstName: req.body.firstName,
@@ -34,6 +36,7 @@ exports.signup = catchAsync(async (req, res, next) => {
   });
 });
 
+// handle login
 exports.login = catchAsync(async (req, res, next) => {
   const { email, password } = req.body;
 
@@ -56,6 +59,9 @@ exports.login = catchAsync(async (req, res, next) => {
   });
 });
 
+/**
+ * Check if the request header has the bearer token then set the user in the request object else denies access
+ */
 exports.protect = catchAsync(async (req, res, next) => {
   // 1) Get token and check if it exist
   let token;
@@ -97,7 +103,11 @@ exports.protect = catchAsync(async (req, res, next) => {
   next();
 });
 
-// Check if authenticated user is authorized to access the resource
+/**
+ * Implementation of role based access to resources. It is used to restrict access to resources based on role
+ * @param  {...String} roles
+ * @returns
+ */
 exports.restrictTo =
   (...roles) =>
   (req, res, next) => {
@@ -109,7 +119,11 @@ exports.restrictTo =
     next();
   };
 
-// Prevent broken access control from patient to patent)
+/**
+ * Protect resource againt broken access control.
+ * Eg: Patient trying to access other patient record by manipulating the query
+ */
+// Prevent broken access control from patient to patent
 exports.restrictSpecificResource = (req, res, next) => {
   if (req.user.userRole === 'patient') {
     if (
